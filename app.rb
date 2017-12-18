@@ -5,12 +5,20 @@ require 'pp'
 
 require 'dotenv/load'
 
+def date2js str
+  y, m, d = str.split('-').map(&:to_i)
+  m -= 1
+  return "Date(#{[y, m, d].join(',')})"
+end
+
 class App < Sinatra::Base
   get '/' do
     send_file File.join(settings.public_folder, 'index.html')
   end
   
   get '/api/v1/status/room' do
+    content_type :json
+    
     db = Mysql2::Client.new(
       database: 'YouTube_Sync_production',
       host:     ENV['SYNCPOD_DB_HOST'],
@@ -27,7 +35,26 @@ class App < Sinatra::Base
       ORDER BY date
     SQL
     
-    pp db.query(sql)
+    {
+      cols: [
+        {
+          label: 'Date',
+          type: 'date',
+        },
+        {
+          label: 'Users',
+          type: 'number',
+        },
+      ],
+      rows: db.query(sql).map{|r|
+        {
+          c: [
+            { v: date2js(r['date']) },
+            { v: r['count'] },
+          ]
+        }
+      }
+    }.to_json
   end
 end
 
