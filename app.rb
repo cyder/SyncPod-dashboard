@@ -39,11 +39,14 @@ class App < Sinatra::Base
     
     result = data.inject([]) do |before, v|
       if before.last && (b = before.last[:date])
-        if b + 1 != v[:date] # if missed point found
-          before << {
-            date: (b + 1),
-            count: 0,
-          }
+        # if missed point found
+        if v[:date] - b > 1
+          (v[:date] - b - 1).to_i.times do |x|
+            before << {
+              date: (b + x + 1),
+              count: 0,
+            }
+          end
         end
       end
       before << v
