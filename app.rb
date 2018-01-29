@@ -1,14 +1,13 @@
 require 'sinatra/base'
 require 'mysql2'
 require 'json'
+require 'date'
 require 'pp'
 
 require 'dotenv/load'
 
-def date2js str
-  y, m, d = str.split('-').map(&:to_i)
-  m -= 1
-  return "Date(#{[y, m, d].join(',')})"
+def date2js d
+  return "Date(#{[d.year, d.month - 1, d.day].join(',')})"
 end
 
 class App < Sinatra::Base
@@ -35,6 +34,21 @@ class App < Sinatra::Base
       ORDER BY date
     SQL
     
+    data = db.query(sql).map{|r| {date: Date.parse(r['date']), count: r['count']} }.sort_by{|e| e[:date]}
+    start_at = data.first[:date]
+    
+    result = data.inject([]) do |before, v|
+      if before.last && (b = before.last[:date])
+        if b + 1 != v[:date] # if missed point found
+          before << {
+            date: (b + 1),
+            count: 0,
+          }
+        end
+      end
+      before << v
+    end
+    
     {
       cols: [
         {
@@ -46,11 +60,11 @@ class App < Sinatra::Base
           type: 'number',
         },
       ],
-      rows: db.query(sql).map{|r|
+      rows: result.map{|r|
         {
           c: [
-            { v: date2js(r['date']) },
-            { v: r['count'] },
+            { v: date2js(r[:date]) },
+            { v: r[:count] },
           ]
         }
       }
