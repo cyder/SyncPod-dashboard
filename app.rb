@@ -91,6 +91,7 @@ class App < Sinatra::Base
         COUNT(DISTINCT id) as `count`
       FROM YouTube_Sync_production.chats
       WHERE created_at >= '2018-01-01'
+        AND chat_type = 'user'
       GROUP BY date
       ORDER BY date
     SQL
