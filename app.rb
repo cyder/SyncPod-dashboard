@@ -18,13 +18,6 @@ class App < Sinatra::Base
   get '/api/v1/status/room' do
     content_type :json
     
-    db = Mysql2::Client.new(
-      database: 'YouTube_Sync_production',
-      host:     ENV['SYNCPOD_DB_HOST'],
-      username: ENV['SYNCPOD_DB_USERNAME'],
-      password: ENV['SYNCPOD_DB_PASSWORD'],
-    )
-    
     sql =<<~SQL
       SELECT
         DATE_FORMAT(entry_at, "%Y-%m-%d") as `date`,
@@ -35,8 +28,7 @@ class App < Sinatra::Base
       ORDER BY date
     SQL
     
-    data = db.query(sql).map{|r| {date: Date.parse(r['date']), count: r['count']} }.sort_by{|e| e[:date]}
-    start_at = data.first[:date]
+    data = __get_db.query(sql).map{|r| {date: Date.parse(r['date']), count: r['count']} }.sort_by{|e| e[:date]}
     
     result = data.inject([]) do |before, v|
       if before.last && (b = before.last[:date])
@@ -78,13 +70,6 @@ class App < Sinatra::Base
   get '/api/v1/status/chat' do
     content_type :json
     
-    db = Mysql2::Client.new(
-      database: 'YouTube_Sync_production',
-      host:     ENV['SYNCPOD_DB_HOST'],
-      username: ENV['SYNCPOD_DB_USERNAME'],
-      password: ENV['SYNCPOD_DB_PASSWORD'],
-    )
-    
     sql =<<~SQL
       SELECT
         DATE_FORMAT(created_at, "%Y-%m-%d") as `date`,
@@ -96,8 +81,7 @@ class App < Sinatra::Base
       ORDER BY date
     SQL
     
-    data = db.query(sql).map{|r| {date: Date.parse(r['date']), count: r['count']} }.sort_by{|e| e[:date]}
-    start_at = data.first[:date]
+    data = __get_db.query(sql).map{|r| {date: Date.parse(r['date']), count: r['count']} }.sort_by{|e| e[:date]}
     
     result = data.inject([]) do |before, v|
       if before.last && (b = before.last[:date])
@@ -135,6 +119,16 @@ class App < Sinatra::Base
       }
     }.to_json
   end
+  
+  def __get_db
+    Mysql2::Client.new(
+      database: 'YouTube_Sync_production',
+      host:     ENV['SYNCPOD_DB_HOST'],
+      username: ENV['SYNCPOD_DB_USERNAME'],
+      password: ENV['SYNCPOD_DB_PASSWORD'],
+    )
+  end
+  
 end
 
 App.run!
