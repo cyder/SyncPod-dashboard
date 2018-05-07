@@ -18,33 +18,51 @@ body {
 		<div class="container">
 			<h1>SyncPod Statistics Dashboard</h1>
 			<p class="lead"></p>
-			<h3>Room</h3>
-			<p>How many users does join to the room?</p>
-
-			<div id="statistics_room" style="width: 100%; height: 200px;">
-			</div>
+			<section>
+				<h3>Room</h3>
+				<p>The unique users who joined the any room per day</p>
+				<div id="statistics_room" style="width: 100%; height: 200px;"></div>
+			</section>
+			<section>
+				<h3>Chat</h3>
+				<p>The sent messages per day</p>
+				<div id="statistics_chat" style="width: 100%; height: 200px;"></div>
+			</section>
 		</div> <!-- /container -->
 	</body>
 </html>
 <script type="text/javascript">
 google.charts.load('current', {'packages':['corechart']});
-	
 google.charts.setOnLoadCallback(drawChart);
-	
-function drawChart() {
-	var jsonData = $.ajax({
-		url: "/api/v1/status/room",
-		dataType: "json",
+
+function fetchDataFromAPI(api_path) {
+	// TODO: error handling
+	return $.ajax({
+		url: api_path,
+		dataType: 'json',
 		async: false
 	}).responseText;
+}
 	
-	var data = new google.visualization.DataTable(jsonData);
+function draw(id, api_path, format) {
+	var data = new google.visualization.DataTable(fetchDataFromAPI(api_path));
+	var chart = new google.visualization.LineChart(document.getElementById(id));
+	chart.draw(data, format);
+}
 
-	var chart = new google.visualization.LineChart(document.getElementById('statistics_room'));
-	chart.draw(data, {
+function drawChart() {
+	draw('statistics_room', '/api/v1/status/room', {
 		vAxis: {
 			format: '#',
-//			ticks: [0, 10, 20, 30, 40, 50],
+	//		ticks: [0, 10, 20, 30, 40, 50],
+			minValue: 0,
+		},
+		connectSteps: false,
+	});
+	draw('statistics_chat', '/api/v1/status/chat', {
+		vAxis: {
+			format: '#',
+	//		ticks: [0, 10, 20, 30, 40, 50],
 			minValue: 0,
 		},
 		connectSteps: false,
